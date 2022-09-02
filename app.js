@@ -18,16 +18,6 @@ app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api', require('./router/routes'));
-
-/**=========== */
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(__dirname + '/dist/'));
-    app.get('*', (req, res) => {
-        res.sendFile(__dirname + '/dist/index.html');
-    });
-}
-
 /**Connection DB */
 mongoose
     .connect(process.env.DB_URI, {
@@ -40,6 +30,16 @@ mongoose
     .catch((err) => {
         console.log(err.message);
     });
+
+app.use('/api', require('./router/routes'));
+
+/**=========== */
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(__dirname + '/dist/'));
+    app.get('*', (req, res) => {
+        res.sendFile(__dirname + '/dist/index.html');
+    });
+}
 
 const port = process.env.PORT || 80;
 
