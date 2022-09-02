@@ -3,7 +3,7 @@ const user = require('../model/user');
 const chat = require('../model/chat');
 const pesan = require('../model/pesan');
 const jwt = require('jsonwebtoken');
-const { create, find } = require('../model/user');
+const moment = require('moment');
 
 module.exports = class handler {
     /**================================registrase================================ */
@@ -60,6 +60,7 @@ module.exports = class handler {
                     res.status(200).json({
                         message: 'Login Successfully',
                         token,
+                        email,
                     });
                 } else {
                     res.status(400).json({ message: 'password salah' });
@@ -73,10 +74,14 @@ module.exports = class handler {
     /**================================Creat chat================================ */
     static async Chat(req, res) {
         const { userId } = req.body;
-        console.log(userId);
 
         let isChat = await chat
-            .find({ users: [req.user._id, userId] })
+            .find({
+                $and: [
+                    { users: { $elemMatch: { $eq: req.user._id } } },
+                    { users: { $elemMatch: { $eq: userId } } },
+                ],
+            })
             .populate('users', '-password')
             .populate('pesanTerakhir');
 
@@ -86,14 +91,18 @@ module.exports = class handler {
         });
 
         if (isChat.length > 0) {
-            res.json(isChat[isChat.length - 1]);
+            res.json({
+                chat: isChat[isChat.length - 1],
+                message: 'Pesan sudah ada',
+            });
         } else {
             await chat
                 .create({
                     users: [req.user._id, userId],
                 })
-                .then(() => {
+                .then((chat) => {
                     res.status(201).json({
+                        chat,
                         message: 'Create chat Successfully',
                     });
                 })
@@ -104,16 +113,21 @@ module.exports = class handler {
     }
 
     /**================================kirim pesan================================ */
+
     static async sendPesan(req, res) {
-        const { content, chatId } = req.body;
+        const { content, chatId, waktu } = req.body;
         try {
             let message = await pesan.create({
                 pengirim: req.user._id,
                 content,
+                waktu,
                 chat: chatId,
             });
 
-            message = await message.populate('pengirim', 'name pic');
+            message = await message.populate(
+                'pengirim',
+                'name pic email waktu',
+            );
             message = await message.populate('chat');
 
             message = await user.populate(message, {
@@ -122,7 +136,7 @@ module.exports = class handler {
             });
 
             await chat.findOneAndUpdate(
-                chatId,
+                { _id: chatId },
                 {
                     $set: {
                         pesanTerakhir: message,
@@ -142,15 +156,39 @@ module.exports = class handler {
     /**================================get all pesan================================ */
 
     static async allPesan(req, res) {
-        await pesan
-            .find({ chat: req.query.chatId })
-            .populate('pengirim', 'name pic email')
-            .populate('chat')
-            .then((data) => {
-                res.status(200).json(data);
+        if (req.query.chatId) {
+            await pesan
+                .find({ chat: req.query.chatId })
+                .populate('pengirim', 'name pic email ')
+                .populate('chat')
+                .populate('chat.pesanTerakhir')
+                .then((allMessage) => {
+                    if (allMessage.length == 0) {
+                        res.status(200).json({
+                            allMessage,
+                            message: 'Pesan masih kosong',
+                        });
+                    } else {
+                        res.status(200).json({ allMessage });
+                    }
+                })
+                .catch((err) => {
+                    res.sendStatus(404);
+                });
+        } else {
+            res.status(404).json({ message: 'Query chatId is not defined' });
+        }
+    }
+    /**================================get all User================================ */
+    static async allUser(req, res) {
+        await user
+            .find()
+            .then((users) => {
+                const user = req.user;
+                res.status(200).json({ users, user });
             })
             .catch((err) => {
-                res.status(400).json({ message: err.message });
+                res.status(404).json({ message: err.message });
             });
     }
 };

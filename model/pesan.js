@@ -16,6 +16,10 @@ const pesan = mongoose.model(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'chat',
             },
+            waktu: {
+                type: String,
+                required: true,
+            },
         },
         {
             timestamps: true,
