@@ -116,7 +116,7 @@ module.exports = class handler {
     /**================================kirim pesan================================ */
 
     static async sendPesan(req, res) {
-        const { content, chatId, waktu } = req.body;
+        const { content, chatId } = req.body;
         try {
             let message = await pesan.create({
                 pengirim: req.user._id,
@@ -136,7 +136,7 @@ module.exports = class handler {
                 select: 'name pic email',
             });
 
-            res.status(201).json({ message });
+            res.status(201).json(message);
         } catch (err) {
             res.status(401).json(err.message);
         }
