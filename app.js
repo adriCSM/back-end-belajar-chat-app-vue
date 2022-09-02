@@ -4,11 +4,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-const port = process.env.PORT || 80;
 const app = express();
 const server = http.createServer(app);
 const { Server } = require('socket.io');
-const { Socket } = require('dgram');
 const io = new Server(server, {
     cors: {
         origin: '*',
@@ -18,6 +16,7 @@ const io = new Server(server, {
 /** */
 app.use(express.json());
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', require('./router/routes'));
 
@@ -41,6 +40,8 @@ mongoose
     .catch((err) => {
         console.log(err.message);
     });
+
+const port = process.env.PORT || 80;
 
 /**RUN Server */
 server.listen(port, () => {
