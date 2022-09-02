@@ -4,6 +4,7 @@ const chat = require('../model/chat');
 const pesan = require('../model/pesan');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const { find } = require('../model/user');
 
 module.exports = class handler {
     /**================================registrase================================ */
@@ -120,7 +121,7 @@ module.exports = class handler {
             let message = await pesan.create({
                 pengirim: req.user._id,
                 content,
-                waktu,
+                waktu: moment(new Date()).format('HH:mm'),
                 chat: chatId,
             });
 
@@ -135,19 +136,7 @@ module.exports = class handler {
                 select: 'name pic email',
             });
 
-            await chat.findOneAndUpdate(
-                { _id: chatId },
-                {
-                    $set: {
-                        pesanTerakhir: message,
-                    },
-                },
-                {
-                    new: true,
-                },
-            );
-
-            res.status(201).json(message);
+            res.status(201).json({ message });
         } catch (err) {
             res.status(401).json(err.message);
         }
@@ -161,7 +150,6 @@ module.exports = class handler {
                 .find({ chat: req.query.chatId })
                 .populate('pengirim', 'name pic email ')
                 .populate('chat')
-                .populate('chat.pesanTerakhir')
                 .then((allMessage) => {
                     if (allMessage.length == 0) {
                         res.status(200).json({
@@ -183,8 +171,9 @@ module.exports = class handler {
     static async allUser(req, res) {
         await user
             .find()
-            .then((users) => {
+            .then(async (users) => {
                 const user = req.user;
+
                 res.status(200).json({ users, user });
             })
             .catch((err) => {
