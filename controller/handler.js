@@ -4,7 +4,6 @@ const chat = require('../model/chat');
 const pesan = require('../model/pesan');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
-const { find } = require('../model/user');
 
 module.exports = class handler {
     /**================================registrase================================ */
@@ -121,7 +120,7 @@ module.exports = class handler {
             let message = await pesan.create({
                 pengirim: req.user._id,
                 content,
-                waktu: moment(new Date()).format('HH:mm'),
+                waktu: moment(new Date()).local('id').format('HH:mm'),
                 chat: chatId,
             });
 
