@@ -12,30 +12,52 @@ module.exports = class handler {
 
         if (!name || !email || !password) {
             res.status(400).json({ message: 'field masih kosong' });
-        }
-
-        const cekUser = await user.findOne({ email });
-
-        if (cekUser) {
-            res.status(400).json({ message: 'Email sudah digunakan' });
+        } else if (password.length < 8) {
+            res.status(400).json({ message: 'Password minimal 8 karakter' });
         } else {
-            await user
-                .insertMany({
-                    name,
-                    email,
-                    password,
-                })
-                .then((data) => {
-                    res.status(201).json({
-                        message: 'Register Successfully',
+            const cekUser = await user.findOne({ email });
+
+            if (cekUser) {
+                res.status(400).json({ message: 'Email sudah digunakan' });
+            } else {
+                await user
+                    .insertMany({
+                        name,
+                        email,
+                        password,
+                    })
+                    .then((data) => {
+                        res.status(201).json({
+                            message: 'Register Successfully',
+                        });
+                    })
+                    .catch((err) => {
+                        res.status(400).json({ message: err.message });
                     });
-                })
-                .catch((err) => {
-                    res.status(400).json({ message: err.message });
-                });
+            }
         }
     }
 
+    /**================================Log out================================ */
+    static async Logout(req, res) {
+        const { id } = req.query;
+
+        await user
+            .findOneAndUpdate(
+                { _id: id },
+                {
+                    $set: {
+                        status: false,
+                    },
+                },
+            )
+            .then(() => {
+                res.status(200).json({ message: 'Log Out success' });
+            })
+            .catch(() => {
+                res.status(404).json({ message: 'Log Out failed' });
+            });
+    }
     /**================================Login================================ */
     static async Login(req, res) {
         const { email, password } = req.body;
@@ -55,6 +77,14 @@ module.exports = class handler {
                         process.env.ACCESS_KEY,
                         {
                             expiresIn: '1d',
+                        },
+                    );
+                    await user.findOneAndUpdate(
+                        { _id },
+                        {
+                            $set: {
+                                status: true,
+                            },
                         },
                     );
                     res.status(200).json({
@@ -120,7 +150,7 @@ module.exports = class handler {
             let message = await pesan.create({
                 pengirim: req.user._id,
                 content,
-                waktu: moment(new Date()).local('id').format('HH:mm'),
+                waktu: moment(new Date()).locale('id').format('HH:mm'),
                 chat: chatId,
             });
 
@@ -177,6 +207,22 @@ module.exports = class handler {
             })
             .catch((err) => {
                 res.status(404).json({ message: err.message });
+            });
+    }
+    /**================================Delete akun================================ */
+
+    static async deleteAkun(req, res) {
+        const { id } = req.query;
+
+        await user
+            .findOneAndDelete({ _id: id })
+            .then(() => {
+                res.status(200).json({
+                    message: 'Delete account successfully',
+                });
+            })
+            .catch((err) => {
+                res.status(400).json({ message: 'Delete account Failed' });
             });
     }
 };

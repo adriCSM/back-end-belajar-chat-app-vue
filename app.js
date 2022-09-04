@@ -51,7 +51,10 @@ server.listen(port, () => {
 /**connection socket */
 io.on('connection', (socket) => {
     console.log(`socket io connected`);
-    console.log(socket.rooms);
+
+    socket.on('users', (e) => {
+        socket.broadcast.emit('datas', e);
+    });
 
     socket.on('kirim-pesan', (isiPesan) => {
         socket.broadcast.emit('pesan', isiPesan);
