@@ -60,6 +60,10 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('pesan', isiPesan);
     });
 
+    socket.on('id', (id) => {
+        socket.broadcast.emit('idUser', id);
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });

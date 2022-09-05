@@ -12,6 +12,8 @@ module.exports = class handler {
 
         if (!name || !email || !password) {
             res.status(400).json({ message: 'field masih kosong' });
+        } else if (name.length < 4) {
+            res.status(400).json({ message: 'Username minimal 4 karakter' });
         } else if (password.length < 8) {
             res.status(400).json({ message: 'Password minimal 8 karakter' });
         } else {
@@ -47,7 +49,7 @@ module.exports = class handler {
                 { _id: id },
                 {
                     $set: {
-                        status: false,
+                        status: 'Offline',
                     },
                 },
             )
@@ -83,21 +85,21 @@ module.exports = class handler {
                         { _id },
                         {
                             $set: {
-                                status: true,
+                                status: 'Online',
                             },
                         },
                     );
                     res.status(200).json({
                         message: 'Login Successfully',
                         token,
-                        email,
+                        _id,
                     });
                 } else {
-                    res.status(400).json({ message: 'password salah' });
+                    res.status(400).json({ message: 'Invalid password' });
                 }
             })
             .catch(() => {
-                res.status(404).json({ message: 'Email belum terdaftar' });
+                res.status(404).json({ message: 'Email not found' });
             });
     }
 

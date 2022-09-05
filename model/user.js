@@ -9,7 +9,7 @@ const user = mongoose.model(
                 name: { type: String, required: true },
                 email: { type: String, required: true },
                 password: { type: String, required: true },
-                status: { type: Boolean, default: false },
+                status: { type: String, default: 'Offline' },
                 pic: {
                     type: String,
                     required: true,
