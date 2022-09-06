@@ -52,8 +52,8 @@ server.listen(port, () => {
 io.on('connection', (socket) => {
     console.log(`socket io connected`);
 
-    socket.on('users', (e) => {
-        socket.broadcast.emit('datas', e);
+    socket.on('allUser', (e) => {
+        socket.broadcast.emit('users', e);
     });
 
     socket.on('kirim-pesan', (isiPesan) => {
@@ -62,6 +62,9 @@ io.on('connection', (socket) => {
 
     socket.on('id', (id) => {
         socket.broadcast.emit('idUser', id);
+    });
+    socket.on('offline', (id) => {
+        socket.broadcast.emit('off', id);
     });
 
     socket.on('disconnect', () => {

@@ -3,6 +3,7 @@ const router = express.Router();
 const handler = require('../controller/handler');
 const auth = require('../middleware/auth');
 
+router.get('/pesanTerakhir', auth, handler.PesanTerakhir);
 router.get('/allPesan', auth, handler.allPesan);
 router.get('/allUser', auth, handler.allUser);
 router.post('/registrasi', handler.Registrasi);

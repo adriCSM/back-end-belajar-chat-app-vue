@@ -18,7 +18,6 @@ const pesan = mongoose.model(
             },
             waktu: {
                 type: String,
-                required: true,
             },
         },
         {

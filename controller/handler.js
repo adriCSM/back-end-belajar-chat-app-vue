@@ -3,7 +3,6 @@ const user = require('../model/user');
 const chat = require('../model/chat');
 const pesan = require('../model/pesan');
 const jwt = require('jsonwebtoken');
-const moment = require('moment');
 
 module.exports = class handler {
     /**================================registrase================================ */
@@ -99,7 +98,7 @@ module.exports = class handler {
                 }
             })
             .catch(() => {
-                res.status(404).json({ message: 'Email not found' });
+                res.status(400).json({ message: 'Email not found' });
             });
     }
 
@@ -147,12 +146,14 @@ module.exports = class handler {
     /**================================kirim pesan================================ */
 
     static async sendPesan(req, res) {
-        const { content, chatId } = req.body;
+        const { content, chatId, waktu } = req.body;
         try {
+            const timestamps = new Date().getTime();
+            const date = new Date(timestamps * 1000);
             let message = await pesan.create({
                 pengirim: req.user._id,
                 content,
-                waktu: moment(new Date()).locale('id').format('HH:mm'),
+                waktu,
                 chat: chatId,
             });
 
@@ -167,13 +168,20 @@ module.exports = class handler {
                 select: 'name pic email',
             });
 
+            await chat.findOneAndUpdate(
+                { _id: chatId },
+                {
+                    pesanTerakhir: message,
+                },
+            );
+
             res.status(201).json(message);
         } catch (err) {
             res.status(401).json(err.message);
         }
     }
 
-    /**================================get all pesan================================ */
+    /**================================get all pesan ================================ */
 
     static async allPesan(req, res) {
         if (req.query.chatId) {
@@ -202,8 +210,11 @@ module.exports = class handler {
     static async allUser(req, res) {
         await user
             .find()
-            .then(async (users) => {
+            .then(async (data) => {
                 const user = req.user;
+                const users = data.sort((a, b) => {
+                    return a.name > b.name ? 1 : b.name > a.name ? -1 : 0;
+                });
 
                 res.status(200).json({ users, user });
             })
@@ -216,15 +227,51 @@ module.exports = class handler {
     static async deleteAkun(req, res) {
         const { id } = req.query;
 
-        await user
-            .findOneAndDelete({ _id: id })
-            .then(() => {
-                res.status(200).json({
-                    message: 'Delete account successfully',
+        await user.findOneAndDelete({ _id: id }).then(async (data) => {
+            await pesan
+                .deleteMany({
+                    pengirim: id,
+                })
+                .then(async () => {
+                    await chat
+                        .deleteMany({
+                            $and: [
+                                {
+                                    users: {
+                                        $elemMatch: { $eq: req.user._id },
+                                    },
+                                },
+                            ],
+                        })
+                        .then(() => {
+                            res.status(200).json({
+                                message: 'Delete account successfully',
+                            });
+                        })
+                        .catch(() => {
+                            res.status(400).json({
+                                message: 'Delete account Failed',
+                            });
+                        });
                 });
-            })
-            .catch((err) => {
-                res.status(400).json({ message: 'Delete account Failed' });
-            });
+        });
+    }
+    /**================================get my pesan================================ */
+    static async PesanTerakhir(req, res) {
+        if (req.user) {
+            await chat
+                .find({
+                    $and: [{ users: { $elemMatch: { $eq: req.user._id } } }],
+                })
+                .populate('pesanTerakhir')
+                .populate('users', '-password')
+
+                .then((chat) => {
+                    res.status(200).json({ allChat: chat, user: req.user });
+                })
+                .catch((err) => {
+                    res.status(404).json(err.message);
+                });
+        }
     }
 };
